@@ -68,6 +68,10 @@ Claude Code asks for your **Retell API key** (stored in the system keychain) and
 - **Stores:** your API key in the system keychain, through Claude Code. `scores.csv`, tester cards (`cards/`) and the owner-only card index are written to your QA folder on your own computer.
 - **Reads:** `config.yaml` and `scenarios.yaml` in your QA folder.
 
+## Privacy
+
+See the [Privacy Policy](PRIVACY.md). In short: the plugin runs on your computer, reads calls from your Retell account, and sends nothing to the author or anyone else.
+
 ## Develop
 
 ```sh
