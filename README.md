@@ -4,6 +4,8 @@ A Claude Code plugin for testing a [Retell](https://www.retellai.com) voice agen
 
 All verdicts come from code; nothing is judged by an LLM. Anything the code can't measure is marked `review` or `unknown`, never passed.
 
+This is an independent project. It isn't made by, affiliated with or endorsed by Retell AI.
+
 The plugin has two parts:
 
 - **An MCP server** with four tools: `tester_cards`, `score_new_calls`, `score_call` and `scoresheet`.
@@ -58,6 +60,13 @@ Claude Code asks for your **Retell API key** (stored in the system keychain) and
 - **Forbidden statements** are pattern matches. Every hit quotes the line to confirm; tune the patterns to your business.
 - **Talk-overs** use Retell's approximate word timestamps. Check borderline cases on the recording.
 - **One QA folder at a time.** To switch agents, change the QA folder setting or start Claude Code in that agent's folder.
+
+## What it runs, sends and stores
+
+- **Runs:** a local Python MCP server, started with `uv run --frozen` from the plugin's `server/` folder. On first start, uv installs the exact package versions pinned in `server/uv.lock` from PyPI into the plugin's data folder (`~/.claude/plugins/data/`).
+- **Sends:** requests only to the Retell API (`https://api.retellai.com`), authenticated with your Retell API key, to list your agent's ended phone calls and read their transcripts and tool calls. It never changes anything in your Retell account. Nothing is sent anywhere else.
+- **Stores:** your API key in the system keychain, through Claude Code. `scores.csv`, tester cards (`cards/`) and the owner-only card index are written to your QA folder on your own computer.
+- **Reads:** `config.yaml` and `scenarios.yaml` in your QA folder.
 
 ## Develop
 

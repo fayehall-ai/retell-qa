@@ -1,20 +1,25 @@
 {
   "name": "retell-qa",
   "displayName": "Retell QA",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Test a Retell voice agent with real phone calls: tester cards, automatic call matching, code-based scoring against a fixed pass bar, and a guided fix-and-re-run loop.",
   "author": {
     "name": "Faye Hall",
     "email": "fayedaihall@gmail.com"
   },
+  "homepage": "https://github.com/fayehall-ai/retell-qa",
   "repository": "https://github.com/fayehall-ai/retell-qa",
+  "documentationUrl": "https://github.com/fayehall-ai/retell-qa#readme",
+  "supportUrl": "https://github.com/fayehall-ai/retell-qa/issues",
+  "icon": "./.claude-plugin/icon.png",
   "license": "MIT",
   "keywords": ["retell", "voice-agent", "qa", "testing", "phone"],
   "mcpServers": {
     "retell-qa": {
-      "command": "uvx",
-      "args": ["--from", "${CLAUDE_PLUGIN_ROOT}/server", "retell-qa"],
+      "command": "uv",
+      "args": ["run", "--frozen", "--no-dev", "--project", "${CLAUDE_PLUGIN_ROOT}/server", "retell-qa"],
       "env": {
+        "UV_PROJECT_ENVIRONMENT": "${CLAUDE_PLUGIN_DATA}/venv",
         "RETELL_API_KEY": "${user_config.retell_api_key}",
         "RETELL_QA_DIR": "${user_config.qa_dir}"
       }
