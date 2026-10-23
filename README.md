@@ -1,6 +1,6 @@
 # Retell QA
 
-A Claude Code plugin for testing a [Retell](https://www.retellai.com) voice agent with real phone calls. It makes cards for human testers, matches each call to its card, scores it the same way every time against a fixed pass bar, and says which kind of fix each failure needs.
+A Claude Code plugin for testing a [Retell](https://www.retellai.com) voice agent with real phone calls. It makes cards for human testers, matches each recorded call back to its card's scenario, scores it the same way every time against a fixed pass bar, and says which kind of fix each failure needs.
 
 All verdicts come from code; nothing is judged by an LLM. Anything the code can't measure is marked `review` or `unknown`, never passed.
 
