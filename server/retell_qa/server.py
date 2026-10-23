@@ -232,7 +232,7 @@ def score_new_calls(since: str = "today") -> dict:
 def scoresheet() -> dict:
     """Progress against the pass bar, using the latest attempt at each scenario.
 
-    Returns each of the seven checks with its value and pass/fail, whether
+    Returns each of the eight checks with its value and pass/fail, whether
     every scenario in scenarios.yaml is scored, whether the whole bar passes, which scenarios to
     re-run next (failures plus all emergencies), transfers still missing a
     ring time, and a separate summary of cold calls.

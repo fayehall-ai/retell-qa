@@ -14,6 +14,10 @@ DIGIT_WORDS = {
     "four": "4", "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
 }
 AMBIGUOUS_ZERO = {"oh", "o"}  # only digits when next to other digits
+TEENS = {"ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13", "fourteen": "14",
+         "fifteen": "15", "sixteen": "16", "seventeen": "17", "eighteen": "18", "nineteen": "19"}
+TENS = {"twenty": "2", "thirty": "3", "forty": "4", "fifty": "5", "sixty": "6",
+        "seventy": "7", "eighty": "8", "ninety": "9"}
 
 
 @dataclass
@@ -56,6 +60,7 @@ class CallScore:
             "agent_version": self.agent_version or "",
             "emergency": self.get("emergency").result,
             "readback": self.get("phone_readback").result,
+            "address_readback": self.get("address_readback").result,
             "transfer": self.get("transfer").result,
             "interruption_count": self.interruptions,
             "e2e_p50_ms": self.e2e_p50_ms if self.e2e_p50_ms is not None else "",
@@ -80,12 +85,18 @@ def spoken_text(call: dict, role: str) -> list[str]:
 
 
 def digits_in(text: str) -> str:
-    """All digits in spoken order, including 'seven oh two' style words."""
+    """All digits in spoken order, including 'seven oh two' and 'twenty three' style words."""
     tokens = re.findall(r"[a-zA-Z]+|\d", text.lower())
     out = []
     for i, tok in enumerate(tokens):
         if tok.isdigit():
             out.append(tok)
+        elif tok in TEENS:
+            out.append(TEENS[tok])
+        elif tok in TENS:
+            next_ = tokens[i + 1] if i + 1 < len(tokens) else ""
+            unit = next_ in DIGIT_WORDS and next_ not in AMBIGUOUS_ZERO and next_ != "zero"
+            out.append(TENS[tok] + ("" if unit else "0"))
         elif tok in DIGIT_WORDS:
             if tok in AMBIGUOUS_ZERO:
                 prev_ = tokens[i - 1] if i else ""
@@ -95,6 +106,38 @@ def digits_in(text: str) -> str:
                     continue
             out.append(DIGIT_WORDS[tok])
     return "".join(out)
+
+
+STREET_SUFFIXES = {"st", "street", "ave", "avenue", "rd", "road", "dr", "drive", "ln", "lane",
+                   "ct", "court", "way", "blvd", "boulevard", "pkwy", "parkway", "pl", "place",
+                   "cir", "circle", "ter", "terrace", "trl", "trail", "loop"}
+DIRECTIONS = {"n", "s", "e", "w", "north", "south", "east", "west"}
+
+
+def street_parts(address: str) -> tuple[str, str]:
+    """'1420 Desert Rose Ln, Henderson' -> ('1420', 'desert rose')."""
+    first = address.split(",")[0].lower().replace(".", "")
+    m = re.match(r"\s*(\d+)\s+(.*)", first)
+    if not m:
+        return "", ""
+    words = m.group(2).split()
+    if words and words[0] in DIRECTIONS:
+        words = words[1:]
+    if words and words[-1] in STREET_SUFFIXES:
+        words = words[:-1]
+    return m.group(1), " ".join(words)
+
+
+def stacked_after_readback(line: str, is_readback) -> bool:
+    """True when a turn reads something back, asks about it, then keeps going
+    ('...1234, is that right? I also need your address.'), so the caller never
+    gets to confirm."""
+    sentences = [s for s in re.split(r"(?<=[.?!])\s+", line.strip()) if s]
+    start = next((i for i, s in enumerate(sentences) if is_readback(s)), None)
+    if start is None:
+        return False
+    ask = next((i for i in range(start, len(sentences)) if sentences[i].endswith("?")), None)
+    return ask is not None and any(re.search(r"[a-zA-Z]", s) for s in sentences[ask + 1:])
 
 
 def tool_calls(call: dict) -> list[dict]:
@@ -215,10 +258,22 @@ def check_readback(call, scenario, config) -> Check:
     if len(want) < 7:
         return Check("phone_readback", "n/a", "scenario has no phone number")
     agent_lines = [(l, digits_in(l)) for l in spoken_text(call, "agent")]
-    if any(want in d for _, d in agent_lines):
-        return Check("phone_readback", "pass", f"agent read back {want}")
     user_digits = digits_in(" ".join(spoken_text(call, "user")))
     heard = want in user_digits
+    read = [l for l, d in agent_lines if want in d]
+    if read:
+        if not heard:
+            return Check("phone_readback", "review",
+                         f"agent read back {want}, but the transcript only has the caller "
+                         f"saying '{user_digits or 'no digits'}'. Listen: did the caller say "
+                         "every digit, or did the agent fill some in?", "prompt")
+        stacked = [l.strip() for l in read
+                   if stacked_after_readback(l, lambda s: len(digits_in(s)) >= 7)]
+        if stacked:
+            return Check("phone_readback", "fail",
+                         "read the number back, then kept talking before the caller could "
+                         f"confirm: {stacked}", "prompt")
+        return Check("phone_readback", "pass", f"agent read back {want}")
     wrong = [l.strip() for l, d in agent_lines if len(d) >= 7]
     if wrong:
         cause = "prompt" if heard else "speech_to_text"
@@ -231,13 +286,49 @@ def check_readback(call, scenario, config) -> Check:
                  "prompt" if heard else "speech_to_text")
 
 
+def check_address_readback(call, scenario, config) -> Check:
+    number, street = street_parts(scenario["caller"].get("address") or "")
+    if not street:
+        return Check("address_readback", "n/a", "scenario has no street address")
+    # An address is mentioned when the house number (on its own, not inside a
+    # phone number) or the street's first word comes up.
+    first = street.split()[0]
+    mentions = lambda l: bool(re.search(rf"(?<![\d-]){number}(?![\d-])", l)
+                              or re.search(rf"\b{re.escape(first)}\b", l.lower()))
+    caller = " ".join(spoken_text(call, "user")).lower()
+    gave = mentions(caller)
+    agent = [l for l in spoken_text(call, "agent") if mentions(l)]
+    right = [l for l in agent if street in l.lower()]
+    if right:
+        stacked = [l.strip() for l in right
+                   if stacked_after_readback(l, lambda s: street in s.lower())]
+        if stacked:
+            return Check("address_readback", "fail",
+                         "read the address back, then kept talking before the caller could "
+                         f"confirm: {stacked}", "prompt")
+        return Check("address_readback", "pass", f"agent read back '{street}'")
+    if agent:
+        heard = street in caller
+        why = ("transcript heard the street right, agent read it back wrong" if heard
+               else f"speech-to-text never wrote '{street}', and the agent read back the "
+                    "wrong street")
+        return Check("address_readback", "fail", f"{why}: {[l.strip() for l in agent]}",
+                     "prompt" if heard else "speech_to_text")
+    if gave:
+        return Check("address_readback", "fail",
+                     "caller gave a street address; agent never read it back", "prompt")
+    return Check("address_readback", "n/a", "caller never gave a street address")
+
+
 def count_interruptions(call, config) -> tuple[int, list[str]]:
     th = config.get("thresholds") or {}
     cut_in = th.get("cut_in_min_overlap_s", 0.25)
     no_yield = th.get("no_yield_overlap_s", 1.0)
+    echo_max = th.get("echo_max_speech_s", 0.7)
     users = utterances(call, "user")
     agents = utterances(call, "agent")
     user_words = [w for u in users for w in u.get("words") or []]
+    agent_words = [w for a in agents for w in a.get("words") or []]
     events = []
     for a in agents:
         words = a.get("words") or []
@@ -252,7 +343,15 @@ def count_interruptions(call, config) -> tuple[int, list[str]]:
             continue
         # B: caller barges in, agent keeps talking over them
         barge = [w for w in user_words if a_start < w["start"] < a_end]
-        if barge and a_end - barge[0]["start"] >= no_yield:
+        # A short burst that only repeats the agent's own words ("I'm sorry" over
+        # "I'm sorry...") is the caller echoing it, not trying to take the turn.
+        # Retell can split one agent sentence across utterances, so compare with
+        # everything the agent said in the 3s before the overlap.
+        said = {t for w in agent_words if barge and barge[0]["start"] - 3 <= w["start"] <= barge[-1]["end"]
+                for t in re.findall(r"[a-z']+", w["word"].lower())}
+        echo = (sum(w["end"] - w["start"] for w in barge) < echo_max
+                and all(set(re.findall(r"[a-z']+", w["word"].lower())) <= said for w in barge))
+        if barge and not echo and a_end - barge[0]["start"] >= no_yield:
             events.append(f"did not yield at {barge[0]['start']:.1f}s "
                           f"(kept talking {a_end - barge[0]['start']:.1f}s)")
     return len(events), events
@@ -333,6 +432,7 @@ def score_cold(call: dict, config: dict, ring_seconds: float | None = None) -> C
         check_forbidden(call, pseudo, config),
         Check("emergency", "n/a", na),
         Check("phone_readback", "n/a", na),
+        Check("address_readback", "n/a", na),
         Check("interruptions", "pass" if n == 0 else "fail",
               "; ".join(events) or "agent never talked over the caller",
               "turn_settings" if n else ""),
@@ -357,6 +457,7 @@ def score_call(call: dict, scenario: dict, config: dict,
         check_forbidden(call, scenario, config),
         check_emergency(call, scenario, config, action, transfer),
         check_readback(call, scenario, config),
+        check_address_readback(call, scenario, config),
         Check("interruptions", "pass" if n == 0 else "fail",
               "; ".join(events) or "agent never talked over the caller",
               "turn_settings" if n else ""),

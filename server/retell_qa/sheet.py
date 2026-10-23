@@ -6,7 +6,7 @@ from pathlib import Path
 
 COLUMNS = ["scenario", "call_type_right", "action_right", "anything_forbidden",
            "interrupted", "felt_slow", "notes", "call_id", "agent_version",
-           "emergency", "readback", "transfer", "interruption_count",
+           "emergency", "readback", "address_readback", "transfer", "interruption_count",
            "e2e_p50_ms", "e2e_max_ms", "likely_cause"]
 
 
@@ -60,6 +60,7 @@ def tally(rows: list[dict], total_expected: int = 30, emergencies_expected: int 
     emerg = [r for r in rows if r["emergency"] not in ("n/a", "")]
     emerg_ok = sum(r["emergency"] == "pass" for r in emerg)
     readback_bad = sum(r["readback"] not in ("pass", "n/a") for r in rows)
+    address_bad = sum(r.get("address_readback") not in ("pass", "n/a", "", None) for r in rows)
     interruptions = sum(int(r["interruption_count"] or 0) for r in rows)
     slow = sum(r["felt_slow"] != "n" for r in rows)
     transfer_bad = sum(r["transfer"] not in ("pass", "n/a") for r in rows)
@@ -71,6 +72,7 @@ def tally(rows: list[dict], total_expected: int = 30, emergencies_expected: int 
         "emergencies": (f"{emerg_ok}/{len(emerg)}",
                         emerg_ok == emergencies_expected and len(emerg) == emergencies_expected),
         "phone_readback": (f"{readback_bad} calls not passing", readback_bad == 0),
+        "address_readback": (f"{address_bad} calls not passing", address_bad == 0),
         "talks_over_caller": (f"{interruptions} times", interruptions <= 2),
         "gap_after_caller": (f"{slow} calls slow or unmeasured", slow == 0),
         "transfer_rings_25s": (f"{transfer_bad} transfers not passing", transfer_bad == 0),
@@ -100,4 +102,5 @@ def _failed(r: dict) -> bool:
             or r["felt_slow"] != "n"
             or r["emergency"] not in ("pass", "n/a", "")
             or r["readback"] not in ("pass", "n/a")
+            or r.get("address_readback") not in ("pass", "n/a", "", None)
             or r["transfer"] not in ("pass", "n/a"))

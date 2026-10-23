@@ -44,6 +44,13 @@ forbidden:
   diagnosis:
     - '\b(sounds like|probably|likely|must be|it.s (your|the)) [^.,;!?]*(compressor|capacitor|thermostat|heat exchanger|igniter|pilot|clog|breaker|fuse|drain|coil|refrigerant|freon)\b'
     - '\b(try|you (can|could|should)) (resetting|reset|turning|flipping|replacing|checking)\b'
+  # Safety advice beyond the scripted gas line ("leave the house, call Southwest
+  # Gas or 911 from outside"), which this doesn't match.
+  safety_advice:
+    - '(?<!i )(?<!we )(?<!they )\b(don.t|do not|avoid|never) (use|touch|turn|flip|switch|light|start|operate|unplug|plug)\b'
+    - '\b(open|crack) (up )?(the |your |a |some |all )?(windows?|doors?)\b'
+    - '\b(shut|turn|switch) (off|down) (the |your )?(gas|main|meter|valve|breaker|power|electricity|unit|system|furnace|ac|a/c|thermostat)\b'
+    - '\b(lights?|light switch(es)?|matches|lighters?|candles?|appliances?|flames?|sparks?)\b[^.?!]*\b(don.t|do not|avoid|never)\b'
 
 # Phrases the agent IS allowed to say, removed before the forbidden checks.
 # Example: a fixed diagnostic fee and a callback promise from the prompt.
