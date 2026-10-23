@@ -11,6 +11,17 @@ The plugin has two parts:
 - **An MCP server** with four tools: `tester_cards`, `score_new_calls`, `score_call` and `scoresheet`.
 - **A `retell-qa` skill** that runs a test round in order: preflight checks, cards, scoring, leftovers, one fix at a time, re-runs, and a strict ship check.
 
+## What changed
+
+- **0.2.2:** Scenarios can set `readback: skip` to drop the phone and address read-back checks. The HVAC example uses it on its gas, burning-smell and sparking calls.
+- **0.2.0–0.2.1: stricter checks. Calls that passed before may now fail.**
+  - New **address read-back** check: the agent must read back the house number and street.
+  - **Phone read-back** fails if the agent asks "is that right?" and keeps talking before the caller can answer, and goes to `review` if the agent read back digits the caller never said.
+  - New `safety_advice` forbidden patterns in the example config, for safety advice beyond the scripted gas line.
+  - Echoes ("I'm sorry" repeated over the agent) no longer count as talking over the caller.
+
+  Scores saved before 0.2.0 have no address read-back result and count as passing it. Re-score those calls with `score_call` before trusting the scoresheet.
+
 ## Requirements
 
 - [Claude Code](https://code.claude.com)
@@ -32,6 +43,7 @@ Claude Code asks for your **Retell API key** (stored in the system keychain) and
 2. **Copy the examples** from `examples/demo-hvac/` into it, or ask Claude: "set up retell-qa for my agent".
 3. **Edit `config.yaml`:** business name, the agent's Retell number (`demo_number`), agent ID, your agent's tool names, the owner's cell on `transfer_to_owner`, and anything the agent is allowed to say that would otherwise look forbidden.
 4. **Write `scenarios.yaml`,** or ask Claude: "draft test scenarios for my agent". Claude asks for the agent's prompt, proposes a mix of calls, and shows you every expected answer to approve before saving. 30 scenarios with 6 marked `emergency: true` is a good size, but any count works; the pass bar scales to the file. Each needs a unique caller name, phone ending and street, and a `situation` in the caller's words.
+   For life-safety emergencies (gas, carbon monoxide, fire), add `readback: skip` so the agent isn't required to read back the number and address before getting the caller out and transferring. Urgent property emergencies (flooding, no heat) should keep the read-back, so someone can call back if the transfer fails.
 5. **In Retell**, add a post-call analysis field named `call_type`. Its values must match `expect.call_type` in your scenarios.
 
 `config.yaml`, `scenarios.yaml`, `scores.csv` and `cards/` hold your agent's details and test results. Keep them out of public repositories.

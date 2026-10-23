@@ -460,6 +460,16 @@ def score_cold(call: dict, config: dict, ring_seconds: float | None = None) -> C
     return score
 
 
+def readback_checks(call, scenario, config) -> list[Check]:
+    """Phone and address read-back, unless the scenario sets `readback: skip`: a
+    life-safety emergency (gas, CO, fire) where the agent should get the caller
+    out and transfer, not hold them on the line confirming details."""
+    if str(scenario.get("readback", "")).lower() == "skip":
+        skip = "scenario sets readback: skip (life-safety emergency)"
+        return [Check("phone_readback", "n/a", skip), Check("address_readback", "n/a", skip)]
+    return [check_readback(call, scenario, config), check_address_readback(call, scenario, config)]
+
+
 def score_call(call: dict, scenario: dict, config: dict,
                ring_seconds: float | None = None) -> CallScore:
     score = CallScore(call.get("call_id", ""), scenario["id"], call.get("agent_version"))
@@ -472,8 +482,7 @@ def score_call(call: dict, scenario: dict, config: dict,
         action,
         check_forbidden(call, scenario, config),
         check_emergency(call, scenario, config, action, transfer),
-        check_readback(call, scenario, config),
-        check_address_readback(call, scenario, config),
+        *readback_checks(call, scenario, config),
         Check("interruptions", "pass" if n == 0 else "fail",
               "; ".join(events) or "agent never talked over the caller",
               "turn_settings" if n else ""),

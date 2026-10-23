@@ -6,7 +6,10 @@ from retell_qa import scoring, sheet
 
 ROOT = Path(__file__).resolve().parents[2] / "examples" / "demo-hvac"
 CONFIG = yaml.safe_load((ROOT / "config.yaml").read_text())
-SCEN = {s["id"]: s for s in yaml.safe_load((ROOT / "scenarios.yaml").read_text())["scenarios"]}
+# Read-back checks are tested on E01, so drop its `readback: skip`; the skip
+# has its own test.
+SCEN = {s["id"]: {k: v for k, v in s.items() if k != "readback"}
+        for s in yaml.safe_load((ROOT / "scenarios.yaml").read_text())["scenarios"]}
 CONFIG["actions"]["transfer_to_owner"]["tool"] = "transfer_call"
 CONFIG["actions"]["transfer_to_owner"]["args"] = ["+17025551000"]
 
@@ -248,3 +251,12 @@ def test_phone_number_with_spaces_is_not_a_house_number():
     call["transcript_object"][1] = utt("user", "I smell gas in my kitchen", 3.0)
     call["transcript_object"][3] = utt("user", "my number is 702 555 1420", 11.5)
     assert scoring.score_call(call, SCEN["E01"], CONFIG).get("address_readback").result == "n/a"
+
+
+def test_readback_skip_makes_both_readbacks_na():
+    call = gas_call_good()
+    call["transcript_object"] = [u for u in call["transcript_object"] if "I have" not in u["content"]]
+    scen = dict(SCEN["E01"], readback="skip")
+    s = scoring.score_call(call, scen, CONFIG)
+    assert s.get("phone_readback").result == "n/a" and s.get("address_readback").result == "n/a"
+    assert scoring.score_call(call, SCEN["E01"], CONFIG).get("phone_readback").result == "fail"

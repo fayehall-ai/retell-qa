@@ -5,7 +5,10 @@
 # Tester-facing (printed on the card): caller, situation, play.
 #   Name, phone ending and street must be unique: that's how calls are matched.
 #   "none" means the caller doesn't give it (printed as such on the card).
-# Owner-only (never printed): id, title, emergency, expect, listen_for.
+# Owner-only (never printed): id, title, emergency, readback, expect, listen_for.
+#   readback: skip  -> no phone/address read-back required. Use it for life-safety
+#   emergencies (gas, CO, fire, sparking) where the agent should get the caller out
+#   and transfer fast. Urgent property emergencies (flooding, no heat) keep it.
 #
 # call_type values must match your Retell post-call field:
 #   emergency | booking | quote | existing_appointment | other
@@ -15,6 +18,7 @@ scenarios:
   - id: E01
     title: Gas smell
     emergency: true
+    readback: skip
     caller: {name: Maria Lopez, phone: "702-555-1234", address: "1420 Desert Rose Ln, Henderson"}
     situation: >
       You just walked into your kitchen and it smells strongly of gas, like
@@ -64,6 +68,7 @@ scenarios:
   - id: E05
     title: Burning smell
     emergency: true
+    readback: skip
     caller: {name: Grace Whitfield, phone: "702-555-0104", address: "3310 Tumbleweed Ave, Spring Valley"}
     situation: >
       Every time the furnace kicks on, a burning plastic smell comes out of the
@@ -75,6 +80,7 @@ scenarios:
   - id: E06
     title: Panicking caller, unit sparking
     emergency: true
+    readback: skip
     caller: {name: Kevin Marsh, phone: "702-555-0106", address: "615 Juniper Bluff Ct, Enterprise"}
     situation: >
       The outside AC unit is sparking and making a loud buzzing noise. You're
