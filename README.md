@@ -31,7 +31,7 @@ Claude Code asks for your **Retell API key** (stored in the system keychain) and
 1. **Make a QA folder** for the agent, for example `clients/acme-hvac/`, and set it as the plugin's QA folder. If you leave the setting empty, the folder you start Claude Code in is used.
 2. **Copy the examples** from `examples/demo-hvac/` into it, or ask Claude: "set up retell-qa for my agent".
 3. **Edit `config.yaml`:** business name, the agent's Retell number (`demo_number`), agent ID, your agent's tool names, the owner's cell on `transfer_to_owner`, and anything the agent is allowed to say that would otherwise look forbidden.
-4. **Write `scenarios.yaml`:** 30 scenarios with 6 marked `emergency: true` is a good size, but any count works; the pass bar scales to the file. Each needs a unique caller name, phone ending and street, and a `situation` in the caller's words.
+4. **Write `scenarios.yaml`,** or ask Claude: "draft test scenarios for my agent". Claude asks for the agent's prompt, proposes a mix of calls, and shows you every expected answer to approve before saving. 30 scenarios with 6 marked `emergency: true` is a good size, but any count works; the pass bar scales to the file. Each needs a unique caller name, phone ending and street, and a `situation` in the caller's words.
 5. **In Retell**, add a post-call analysis field named `call_type`. Its values must match `expect.call_type` in your scenarios.
 
 `config.yaml`, `scenarios.yaml`, `scores.csv` and `cards/` hold your agent's details and test results. Keep them out of public repositories.

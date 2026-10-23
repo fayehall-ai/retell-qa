@@ -1,7 +1,7 @@
 {
   "name": "retell-qa",
   "displayName": "Retell QA",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Test a Retell voice agent with real phone calls: tester cards, automatic call matching, code-based scoring against a fixed pass bar, and a guided fix-and-re-run loop.",
   "author": {
     "name": "Faye Hall",

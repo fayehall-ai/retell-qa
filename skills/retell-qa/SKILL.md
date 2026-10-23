@@ -1,6 +1,6 @@
 ---
 name: retell-qa
-description: Run a QA test round on a Retell voice agent with real phone calls, using the retell-qa MCP tools. Use when the user wants to make tester cards, score test calls, check the scoresheet or pass bar, add a transfer's ring time, score a cold call, decide what to fix or re-run, or asks whether a voice agent is ready to ship.
+description: Run a QA test round on a Retell voice agent with real phone calls, using the retell-qa MCP tools. Use when the user wants to set up testing for an agent, write or draft test scenarios, make tester cards, score test calls, check the scoresheet or pass bar, add a transfer's ring time, score a cold call, decide what to fix or re-run, or asks whether a voice agent is ready to ship.
 argument-hint: "What stage? e.g. 'cards for 5 testers', 'score today', 'where are we'"
 ---
 
@@ -8,11 +8,11 @@ argument-hint: "What stage? e.g. 'cards for 5 testers', 'score today', 'where ar
 
 The retell-qa MCP server does the measuring. Verdicts come from its code, never from you. Your job is to run the round in order, keep the answer key away from testers, and turn failures into one fix at a time.
 
-A round goes: **preflight → cards → testers call → score → resolve leftovers → fix → re-run → ship check**. If the user's request names a stage, start there, but run preflight first in a new session.
+A round goes: **preflight → (draft scenarios, for a new agent) → cards → testers call → score → resolve leftovers → fix → re-run → ship check**. If the user's request names a stage, start there, but run preflight first in a new session.
 
 ## 1. Preflight (before cards or scoring)
 
-The server reads `config.yaml` and `scenarios.yaml` from the QA folder: the plugin's **QA folder** setting (`${user_config.qa_dir}`), or the folder Claude Code was started in when that's empty. If either file is missing, offer to start from the examples in `${CLAUDE_PLUGIN_ROOT}/examples/demo-hvac/`, copied into the QA folder, and walk the user through each field.
+The server reads `config.yaml` and `scenarios.yaml` from the QA folder: the plugin's **QA folder** setting (`${user_config.qa_dir}`), or the folder Claude Code was started in when that's empty. If `config.yaml` is missing, copy it from `${CLAUDE_PLUGIN_ROOT}/examples/demo-hvac/` into the QA folder and walk the user through each field. If `scenarios.yaml` is missing, or still holds the HVAC example for a business that isn't HVAC, offer to draft one (step 1a).
 
 Read both files and check:
 
@@ -23,6 +23,19 @@ Read both files and check:
 - `scenarios.yaml` has at least one scenario with `emergency: true`, and each caller's name, phone ending and street is unique. 30 scenarios with 6 emergencies is the recommended size; fewer is fine, but mention it if there are under 20 or no emergencies. The pass bar scales to whatever the file holds.
 
 Report anything wrong before going further. Don't edit `expect:` answer keys yourself: the user approves what counts as correct.
+
+## 1a. Draft scenarios (new agent)
+
+Use this when the user has no `scenarios.yaml` or asks for scenarios for their business. Use `${CLAUDE_PLUGIN_ROOT}/examples/demo-hvac/scenarios.yaml` as the format reference.
+
+1. **Learn the agent.** Ask the user to paste the agent's prompt from Retell, or to describe the business: what it does, its service area, which calls get transferred, prices the agent may quote, and what the agent must never say. Read `config.yaml` for the action names (`actions.*`), and ask which `call_type` values their Retell post-call field uses.
+2. **Propose the mix before writing.** Aim for about 30 scenarios, grouped by call type, with about 6 real emergencies. Show the user the list of titles with counts per group and get an OK before writing them out.
+3. **Cover what breaks voice agents,** not just the happy path: callers who give no address, change their mind, ask for something the business doesn't do, call from outside the service area, or are panicking. Spread the `play` styles across the set: `fast`, `interrupt`, `pieces`, `car`, `mumble`, `spanish`, `accent`. Use `spanish` and `accent` only if the user has testers who can play them.
+4. **Make each caller matchable.** Every caller needs a unique name, a unique phone ending (last 4 digits) and a unique street name. Use fictional `555-01xx` numbers in the business's area code, plausible local streets and towns, and put the town and street words in `listen_for`.
+5. **Write situations in the caller's words.** A `situation` describes what happened to the caller. It must never hint at the expected answer: no "emergency", "transfer", "book" or the call type.
+6. **Draft `expect` and mark it for review.** Fill in `call_type`, `action` and any `must_say` patterns from the agent's prompt. Then show the user every `expect` and `emergency` value in one table and ask them to confirm or correct each one. The user decides what counts as correct; don't save until they approve.
+
+Write the file to the QA folder (back up an existing one first), then run the preflight checks on it.
 
 ## 2. Tester cards
 
