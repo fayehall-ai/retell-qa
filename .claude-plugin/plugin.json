@@ -1,0 +1,38 @@
+{
+  "name": "retell-qa",
+  "displayName": "Retell QA",
+  "version": "0.1.0",
+  "description": "Test a Retell voice agent with real phone calls: tester cards, automatic call matching, code-based scoring against a fixed pass bar, and a guided fix-and-re-run loop.",
+  "author": {
+    "name": "Faye Hall",
+    "email": "fayedaihall@gmail.com"
+  },
+  "repository": "https://github.com/fayehall-ai/retell-qa",
+  "license": "MIT",
+  "keywords": ["retell", "voice-agent", "qa", "testing", "phone"],
+  "mcpServers": {
+    "retell-qa": {
+      "command": "uvx",
+      "args": ["--from", "${CLAUDE_PLUGIN_ROOT}/server", "retell-qa"],
+      "env": {
+        "RETELL_API_KEY": "${user_config.retell_api_key}",
+        "RETELL_QA_DIR": "${user_config.qa_dir}"
+      }
+    }
+  },
+  "userConfig": {
+    "retell_api_key": {
+      "type": "string",
+      "title": "Retell API key",
+      "description": "Your Retell API key (starts with key_). Stored in the system keychain.",
+      "sensitive": true,
+      "required": true
+    },
+    "qa_dir": {
+      "type": "directory",
+      "title": "QA folder",
+      "description": "Folder holding config.yaml and scenarios.yaml for the agent under test. Scores and cards are written here too. Empty: the folder Claude Code was started in.",
+      "default": ""
+    }
+  }
+}

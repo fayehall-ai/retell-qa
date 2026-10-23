@@ -1,0 +1,352 @@
+# Demo Heating & Air: the 30 test calls.
+# Answer keys follow the starter agent prompt. Review every `expect` before
+# testing: you approve what counts as correct, not the tool.
+#
+# Tester-facing (printed on the card): caller, situation, play.
+#   Name, phone ending and street must be unique: that's how calls are matched.
+#   "none" means the caller doesn't give it (printed as such on the card).
+# Owner-only (never printed): id, title, emergency, expect, listen_for.
+#
+# call_type values must match your Retell post-call field:
+#   emergency | booking | quote | existing_appointment | other
+
+scenarios:
+  # ---------- Emergencies (6): transfer to the on-call phone ----------
+  - id: E01
+    title: Gas smell
+    emergency: true
+    caller: {name: Maria Lopez, phone: "702-555-1234", address: "1420 Desert Rose Ln, Henderson"}
+    situation: >
+      You just walked into your kitchen and it smells strongly of gas, like
+      rotten eggs. You're scared and not sure if you should stay inside.
+    play: [fast, interrupt]
+    expect:
+      call_type: emergency
+      action: transfer_to_owner
+      must_say:
+        - "leave (the|your) (house|home)"
+        - "southwest gas|911|nine one one"
+    listen_for: [Henderson, Desert Rose]
+
+  - id: E02
+    title: Heat out, elderly parent at home
+    emergency: true
+    caller: {name: Dan Okafor, phone: "702-555-0102", address: "88 Red Spring Dr, Summerlin"}
+    situation: >
+      Your furnace stopped working last night. It's about 35 degrees outside,
+      your 84-year-old mother lives with you, and the house keeps getting colder.
+    play: [pieces]
+    expect: {call_type: emergency, action: transfer_to_owner}
+    listen_for: [Summerlin, Red Spring]
+
+  - id: E03
+    title: AC out in the heat
+    emergency: true
+    caller: {name: Lena Brooks, phone: "702-555-0101", address: "2215 Cactus Wren Dr, Henderson"}
+    situation: >
+      Your AC stopped blowing cold air this afternoon. It's 104 outside and
+      already 90 inside, and you have a two-year-old at home.
+    play: [car]
+    expect: {call_type: emergency, action: transfer_to_owner}
+    listen_for: [Henderson, Cactus Wren]
+
+  - id: E04
+    title: Water pouring from the unit
+    emergency: true
+    caller: {name: Tom Reyes, phone: "702-555-0103", address: "7420 Silver Mesa Way, North Las Vegas"}
+    situation: >
+      Water is pouring out of the indoor unit in your hallway closet and
+      spreading across the floor. You've put towels down but it keeps coming.
+    play: [fast]
+    expect: {call_type: emergency, action: transfer_to_owner}
+    listen_for: [North Las Vegas, Silver Mesa]
+
+  - id: E05
+    title: Burning smell
+    emergency: true
+    caller: {name: Grace Whitfield, phone: "702-555-0104", address: "3310 Tumbleweed Ave, Spring Valley"}
+    situation: >
+      Every time the furnace kicks on, a burning plastic smell comes out of the
+      vents. You turned the thermostat off and you're worried.
+    play: [mumble]
+    expect: {call_type: emergency, action: transfer_to_owner}
+    listen_for: [Spring Valley, Tumbleweed]
+
+  - id: E06
+    title: Panicking caller, unit sparking
+    emergency: true
+    caller: {name: Kevin Marsh, phone: "702-555-0106", address: "615 Juniper Bluff Ct, Enterprise"}
+    situation: >
+      The outside AC unit is sparking and making a loud buzzing noise. You're
+      panicking: talk fast, jump between details, and repeat yourself.
+    play: [fast, interrupt, pieces]
+    expect: {call_type: emergency, action: transfer_to_owner}
+    listen_for: [Enterprise, Juniper Bluff]
+
+  # ---------- Bookings (8): take the request, no transfer ----------
+  - id: B01
+    title: Tune-up
+    emergency: false
+    caller: {name: Kim Tran, phone: "702-555-0107", address: "5530 W Sahara Ave, Las Vegas"}
+    situation: >
+      You want someone to check your AC before next summer. Nothing is broken.
+      Any weekday works for you.
+    play: [mumble]
+    expect: {call_type: booking, action: no_transfer, must_say: ["text"]}
+    listen_for: [Sahara]
+
+  - id: B02
+    title: Install estimate
+    emergency: false
+    caller: {name: Howard Pike, phone: "702-555-0108", address: "9902 Granite Crest Rd, Summerlin"}
+    situation: >
+      Your AC and furnace are 20 years old. You want someone to come out and
+      tell you what a whole new system would involve and cost.
+    play: [car]
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Summerlin, Granite Crest]
+
+  - id: B03
+    title: Repair, asks for Saturday
+    emergency: false
+    caller: {name: Nina Castillo, phone: "702-555-0109", address: "1847 Ocotillo St, Las Vegas"}
+    situation: >
+      Your AC makes a rattling noise but still cools. You work weekdays, so
+      you can only do a Saturday. Ask for Saturday specifically.
+    play: [interrupt]
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Ocotillo]
+
+  - id: B04
+    title: ZIP outside the service area
+    emergency: false
+    caller: {name: Bill Dorsett, phone: "702-555-0110", address: "412 Lakeview Dr, Boulder City 89005"}
+    situation: >
+      You want an AC tune-up. You live in Boulder City; if asked for a ZIP,
+      it's 89005.
+    play: []
+    expect: {call_type: booking, action: no_transfer, must_say: ["coordinator|confirm"]}
+    listen_for: [Boulder City, Lakeview]
+
+  - id: B05
+    title: Caller gives no address
+    emergency: false
+    caller: {name: Ruth Ingram, phone: "702-555-0111", address: "none"}
+    situation: >
+      You want someone to check the heater at your father's house. You don't know
+      the street address; you only know it's "off Eastern, near Sunset."
+    play: []
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Eastern, Sunset]
+
+  - id: B06
+    title: Changes the time twice
+    emergency: false
+    caller: {name: Omar Haddad, phone: "702-555-0112", address: "2760 Mesquite Grove Ln, Henderson"}
+    situation: >
+      You want a furnace tune-up. Ask for a morning, then change your mind to
+      afternoon, then change back to morning. Morning is your final answer.
+    play: [pieces]
+    expect: {call_type: booking, action: no_transfer, must_say: ["morning"]}
+    listen_for: [Henderson, Mesquite Grove]
+
+  - id: B07
+    title: Spanish speaker
+    emergency: false
+    caller: {name: Lucia Ortega, phone: "702-555-0113", address: "1305 Palo Verde Dr, Las Vegas"}
+    situation: >
+      You want your AC tuned up and your ducts cleaned. Nothing is urgent.
+    play: [spanish]
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Palo Verde]
+
+  - id: B08
+    title: Caller with a strong accent
+    emergency: false
+    caller: {name: Chris Novak, phone: "702-555-0114", address: "4471 Mountain Vista St, Las Vegas"}
+    situation: >
+      Your thermostat screen went blank. The weather is mild, so it's not
+      urgent, but you want someone to come look at it this week.
+    play: [accent]
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Mountain Vista]
+
+  # ---------- Price questions (5): only the $89 diagnostic, no transfer ----------
+  - id: Q01
+    title: How much is a new AC?
+    emergency: false
+    caller: {name: Ray Delgado, phone: "702-555-4410", address: "1001 Horizon Ridge Pkwy, Henderson"}
+    situation: >
+      Your AC is 15 years old and you're thinking about replacing it. You want
+      to know how much a new one costs, installed. Push for a number.
+    play: [interrupt]
+    expect: {call_type: quote, action: no_transfer, must_say: ["coordinator|depends"]}
+    listen_for: [Horizon Ridge, Henderson]
+
+  - id: Q02
+    title: Is the diagnostic free?
+    emergency: false
+    caller: {name: Janet Cole, phone: "702-555-0116", address: "830 Coral Sands Ave, Las Vegas"}
+    situation: >
+      Your heater is making a clicking noise. Before anything else, you want to
+      know: is it free for someone to come look at it?
+    play: [car]
+    expect: {call_type: quote, action: no_transfer, must_say: ["89|eighty.nine"]}
+    listen_for: [Coral Sands]
+
+  - id: Q03
+    title: Do you match prices?
+    emergency: false
+    caller: {name: Derek Halvorsen, phone: "702-555-0117", address: "2290 Starlight Canyon Rd, Summerlin"}
+    situation: >
+      Another company told you $6,500 for a new system. You want to know if
+      this company will match or beat that price.
+    play: [fast]
+    expect: {call_type: quote, action: no_transfer, must_say: ["coordinator|depends"]}
+    listen_for: [Summerlin, Starlight Canyon]
+
+  - id: Q04
+    title: Do you do financing?
+    emergency: false
+    caller: {name: Alicia Quintero, phone: "702-555-0118", address: "5124 Painted Sky Dr, Las Vegas"}
+    situation: >
+      You need a new AC but can't pay for it all at once. You want to know if
+      they offer payment plans, and what the monthly payment would be.
+    play: []
+    expect: {call_type: quote, action: no_transfer, must_say: ["financing|specialist"]}
+    listen_for: [Painted Sky]
+
+  - id: Q05
+    title: What's your hourly rate?
+    emergency: false
+    caller: {name: Gary Lindqvist, phone: "702-555-0119", address: "77 Sandhill Crane Way, North Las Vegas"}
+    situation: >
+      You just want to know what they charge per hour. Keep asking for the
+      hourly rate, even if they talk about something else.
+    play: [mumble]
+    expect: {call_type: quote, action: no_transfer}
+    listen_for: [North Las Vegas, Sandhill Crane]
+
+  # ---------- Existing appointments (4): take the message, no transfer ----------
+  - id: A01
+    title: Customer running late
+    emergency: false
+    caller: {name: Priya Shah, phone: "702-555-0120", address: "3008 Wild Sage Ct, Henderson"}
+    situation: >
+      A technician is coming to your house this afternoon, and you're stuck in
+      traffic. You'll be about 30 minutes late getting home.
+    play: [car]
+    expect: {call_type: existing_appointment, action: no_transfer, must_say: ["text"]}
+    listen_for: [Henderson, Wild Sage]
+
+  - id: A02
+    title: Reschedule
+    emergency: false
+    caller: {name: Mark Ellison, phone: "702-555-0121", address: "6650 Copper Basin Ave, Enterprise"}
+    situation: >
+      You have a tune-up booked for Thursday and need to move it to sometime
+      next week.
+    play: [pieces]
+    expect: {call_type: existing_appointment, action: no_transfer, must_say: ["text"]}
+    listen_for: [Enterprise, Copper Basin]
+
+  - id: A03
+    title: Is the tech still coming?
+    emergency: false
+    caller: {name: Pat Nguyen, phone: "702-555-0122", address: "230 Anthem Village Dr, Henderson"}
+    situation: >
+      A technician was supposed to come this morning. It's 11:30 and nobody has
+      shown up. Push hard to find out exactly when they'll get there.
+    play: [interrupt]
+    expect: {call_type: existing_appointment, action: no_transfer}
+    listen_for: [Henderson, Anthem]
+
+  - id: A04
+    title: Cancel
+    emergency: false
+    caller: {name: Helen Strauss, phone: "702-555-0123", address: "1919 Yucca Flats Ln, Las Vegas"}
+    situation: >
+      You have a tune-up tomorrow, but your son-in-law fixed the problem. You
+      want to cancel the appointment.
+    play: [fast]
+    expect: {call_type: existing_appointment, action: no_transfer}
+    listen_for: [Yucca Flats]
+
+  # ---------- Other (7) ----------
+  - id: O01
+    title: Vendor pitch
+    emergency: false
+    caller: {name: Brad Kessler, phone: "702-555-0124", address: "none"}
+    situation: >
+      You sell online advertising to heating and AC companies. You want to talk
+      to the owner about getting them more customers. Be friendly but pushy.
+    play: []
+    expect: {call_type: other, action: no_transfer}
+    listen_for: []
+
+  - id: O02
+    title: Job applicant
+    emergency: false
+    caller: {name: Jordan Whitaker, phone: "702-555-0125", address: "none"}
+    situation: >
+      You're an HVAC technician with five years of experience, looking for a
+      job. You want to know if they're hiring and how to apply.
+    play: []
+    expect: {call_type: other, action: no_transfer}
+    listen_for: []
+
+  - id: O03
+    title: Wrong number
+    emergency: false
+    caller: {name: Doris Webb, phone: "702-555-0126", address: "none"}
+    situation: >
+      You think you're calling Sunrise Pizza to order a large pepperoni. Be
+      confused when it isn't. Only give your name and number if asked.
+    play: []
+    expect: {call_type: other, action: no_transfer}
+    listen_for: []
+
+  - id: O04
+    title: Are you a robot?
+    emergency: false
+    caller: {name: Felix Grant, phone: "702-555-0127", address: "4040 Blue Diamond Rd, Las Vegas"}
+    situation: >
+      You want an AC tune-up. But first, right after it answers, ask: "Wait,
+      am I talking to a real person?" Then carry on with your request.
+    play: []
+    expect: {call_type: booking, action: no_transfer, must_say: ["AI assistant|an AI"]}
+    listen_for: [Blue Diamond]
+
+  - id: O05
+    title: Demands a human immediately
+    emergency: false
+    caller: {name: Carla Benton, phone: "702-555-0128", address: "2525 Coyote Hollow Ave, Las Vegas"}
+    situation: >
+      You have a question about a bill from your last visit, and you refuse to
+      talk to a machine. Say right away that you want a real person, and keep
+      saying it. If it offers to put you through to someone, say yes.
+    play: [interrupt]
+    expect: {call_type: other, action: transfer_to_owner}
+    listen_for: [Coyote Hollow]
+
+  - id: O06
+    title: Refuses to give a number
+    emergency: false
+    caller: {name: Steve Ramos, phone: "none", address: "980 Twin Lakes Dr, Las Vegas"}
+    situation: >
+      You want an AC tune-up, but you don't give out your phone number. If
+      asked, say you'd rather not, even if asked twice.
+    play: []
+    expect: {call_type: booking, action: no_transfer}
+    listen_for: [Twin Lakes]
+
+  - id: O07
+    title: Long silence, then hang up
+    emergency: false
+    caller: {name: "none", phone: "none", address: "none"}
+    situation: >
+      Say nothing at all. After it answers, stay silent for about 15 seconds,
+      then hang up.
+    play: []
+    expect: {call_type: other, action: no_transfer}
+    listen_for: []

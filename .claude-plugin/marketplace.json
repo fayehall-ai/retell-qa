@@ -1,0 +1,16 @@
+{
+  "name": "retell-qa",
+  "owner": {
+    "name": "Faye Hall"
+  },
+  "description": "QA tools for Retell voice agents.",
+  "plugins": [
+    {
+      "name": "retell-qa",
+      "source": "./",
+      "description": "Test a Retell voice agent with real phone calls against a fixed pass bar.",
+      "category": "testing",
+      "keywords": ["retell", "voice-agent", "qa"]
+    }
+  ]
+}

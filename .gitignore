@@ -1,0 +1,15 @@
+# Your own test data: never publish
+scores.csv
+cards/
+config.yaml
+scenarios.yaml
+!examples/**/config.yaml
+!examples/**/scenarios.yaml
+.env
+
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+*.egg-info/
+dist/
