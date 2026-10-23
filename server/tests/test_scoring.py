@@ -231,3 +231,20 @@ def test_echo_counts_when_retell_splits_the_agent_line():
     echo["words"] = words("I'm sorry", 7.5, step=0.25)
     call["transcript_object"].insert(4, echo)
     assert scoring.score_call(call, SCEN["E01"], CONFIG).interruptions == 0
+
+
+def test_wrong_house_number_read_back_fails():
+    call = gas_call_good()
+    call["transcript_object"][-1] = utt("agent", "I have 1240 Desert Rose Lane in Henderson, is that right?", 21.0)
+    c = scoring.score_call(call, SCEN["E01"], CONFIG).get("address_readback")
+    assert c.result == "fail" and "house number" in c.detail
+    call["transcript_object"][-1] = utt("agent", "I have fourteen twenty Desert Rose Lane, is that right?", 21.0)
+    assert scoring.score_call(call, SCEN["E01"], CONFIG).get("address_readback").result == "pass"
+
+
+def test_phone_number_with_spaces_is_not_a_house_number():
+    call = gas_call_good()
+    call["transcript_object"].pop()
+    call["transcript_object"][1] = utt("user", "I smell gas in my kitchen", 3.0)
+    call["transcript_object"][3] = utt("user", "my number is 702 555 1420", 11.5)
+    assert scoring.score_call(call, SCEN["E01"], CONFIG).get("address_readback").result == "n/a"

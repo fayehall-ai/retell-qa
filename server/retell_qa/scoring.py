@@ -128,6 +128,20 @@ def street_parts(address: str) -> tuple[str, str]:
     return m.group(1), " ".join(words)
 
 
+def without_phone_numbers(text: str) -> str:
+    """Drop digit runs of 7+ digits, however they're spaced ('702 555 1420',
+    '702-555-1420'), so a phone number's last digits aren't taken for a house number."""
+    return re.sub(r"\d[\d\s.()-]*\d",
+                  lambda m: " " if len(re.sub(r"\D", "", m.group())) >= 7 else m.group(), text)
+
+
+def house_number_in(text: str, number: str) -> bool:
+    """The house number as digits ('1420') or words ('fourteen twenty'), outside phone numbers."""
+    text = without_phone_numbers(text)
+    return bool(re.search(rf"(?<![\d-]){number}(?![\d-])", text)
+                or number in digits_in(re.sub(r"\d+", " ", text)))
+
+
 def stacked_after_readback(line: str, is_readback) -> bool:
     """True when a turn reads something back, asks about it, then keeps going
     ('...1234, is that right? I also need your address.'), so the caller never
@@ -293,12 +307,12 @@ def check_address_readback(call, scenario, config) -> Check:
     # An address is mentioned when the house number (on its own, not inside a
     # phone number) or the street's first word comes up.
     first = street.split()[0]
-    mentions = lambda l: bool(re.search(rf"(?<![\d-]){number}(?![\d-])", l)
-                              or re.search(rf"\b{re.escape(first)}\b", l.lower()))
+    has_number = lambda l: house_number_in(l, number)
+    mentions = lambda l: bool(has_number(l) or re.search(rf"\b{re.escape(first)}\b", l.lower()))
     caller = " ".join(spoken_text(call, "user")).lower()
     gave = mentions(caller)
     agent = [l for l in spoken_text(call, "agent") if mentions(l)]
-    right = [l for l in agent if street in l.lower()]
+    right = [l for l in agent if street in l.lower() and has_number(l)]
     if right:
         stacked = [l.strip() for l in right
                    if stacked_after_readback(l, lambda s: street in s.lower())]
@@ -306,14 +320,16 @@ def check_address_readback(call, scenario, config) -> Check:
             return Check("address_readback", "fail",
                          "read the address back, then kept talking before the caller could "
                          f"confirm: {stacked}", "prompt")
-        return Check("address_readback", "pass", f"agent read back '{street}'")
+        return Check("address_readback", "pass", f"agent read back '{number} {street}'")
     if agent:
-        heard = street in caller
-        why = ("transcript heard the street right, agent read it back wrong" if heard
-               else f"speech-to-text never wrote '{street}', and the agent read back the "
-                    "wrong street")
+        street_ok = any(street in l.lower() for l in agent)
+        part, said_right = (("house number", has_number(caller)) if street_ok
+                            else ("street", street in caller))
+        why = (f"transcript heard the {part} right, agent read it back wrong" if said_right
+               else f"speech-to-text never wrote the {part} ('{number if street_ok else street}'), "
+                    f"and the agent read back the wrong {part}")
         return Check("address_readback", "fail", f"{why}: {[l.strip() for l in agent]}",
-                     "prompt" if heard else "speech_to_text")
+                     "prompt" if said_right else "speech_to_text")
     if gave:
         return Check("address_readback", "fail",
                      "caller gave a street address; agent never read it back", "prompt")
