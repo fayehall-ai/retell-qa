@@ -63,7 +63,7 @@ Claude Code asks for your **Retell API key** (stored in the system keychain) and
 
 ## What it runs, sends and stores
 
-- **Runs:** a local Python MCP server, started with `uv run --frozen` from the plugin's `server/` folder. On first start, uv installs the exact package versions pinned in `server/uv.lock` from PyPI into the plugin's data folder (`~/.claude/plugins/data/`).
+- **Runs:** a local Python MCP server, started with `uv run --frozen` from the plugin's `server/` folder. On first start, uv installs the exact package versions pinned in `server/uv.lock` from PyPI into `server/.venv` inside the installed plugin.
 - **Sends:** requests only to the Retell API (`https://api.retellai.com`), authenticated with your Retell API key, to list your agent's ended phone calls and read their transcripts and tool calls. It never changes anything in your Retell account. Nothing is sent anywhere else.
 - **Stores:** your API key in the system keychain, through Claude Code. `scores.csv`, tester cards (`cards/`) and the owner-only card index are written to your QA folder on your own computer.
 - **Reads:** `config.yaml` and `scenarios.yaml` in your QA folder.
