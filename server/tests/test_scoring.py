@@ -143,3 +143,12 @@ def test_diagnosis_pattern_stays_within_a_clause():
     assert scoring.score_call(call, SCEN["E01"], CONFIG).get("forbidden").result == "pass"
     call["transcript_object"].append(utt("agent", "It sounds like your capacitor went", 25.0))
     assert scoring.score_call(call, SCEN["E01"], CONFIG).get("forbidden").result == "fail"
+
+
+def test_tally_scales_to_scenario_count(tmp_path):
+    path = tmp_path / "scores.csv"
+    sheet.upsert(path, scoring.score_call(gas_call_good(), SCEN["E01"], CONFIG, ring_seconds=12).row())
+    t = sheet.tally(sheet.load(path), total_expected=1, emergencies_expected=1)
+    assert t["complete"]
+    assert t["checks"]["call_type_and_action"]["pass"] is True     # 1 of 1 meets 90%
+    assert t["checks"]["emergencies"]["pass"] is True

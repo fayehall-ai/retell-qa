@@ -89,6 +89,12 @@ def _scenarios() -> list[dict]:
     return _load(SCENARIOS)["scenarios"]
 
 
+def _tally() -> dict:
+    scenarios = _scenarios()
+    return sheet.tally(sheet.load(SHEET), total_expected=len(scenarios),
+                       emergencies_expected=sum(bool(s.get("emergency")) for s in scenarios))
+
+
 def _scenario(scenario_id: str) -> dict:
     for s in _scenarios():
         if s["id"].lower() == scenario_id.lower():
@@ -226,12 +232,12 @@ def score_new_calls(since: str = "today") -> dict:
 def scoresheet() -> dict:
     """Progress against the pass bar, using the latest attempt at each scenario.
 
-    Returns each of the seven checks with its value and pass/fail, whether all
-    30 calls are scored, whether the whole bar passes, which scenarios to
+    Returns each of the seven checks with its value and pass/fail, whether
+    every scenario in scenarios.yaml is scored, whether the whole bar passes, which scenarios to
     re-run next (failures plus all emergencies), transfers still missing a
     ring time, and a separate summary of cold calls.
     """
-    return sheet.tally(sheet.load(SHEET))
+    return _tally()
 
 
 @mcp.tool()
@@ -256,7 +262,7 @@ def tester_cards(scenario_ids: list[str] | None = None, testers: int = 1,
     """
     ids = scenario_ids
     if rerun:
-        ids = sheet.tally(sheet.load(SHEET))["rerun_next"]
+        ids = _tally()["rerun_next"]
         if not ids:
             return {"message": "Nothing to re-run: the scoresheet has no failures yet."}
     result = cards.build(_scenarios(), _load(CONFIG), ids, testers, CARDS)

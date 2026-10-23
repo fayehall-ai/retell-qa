@@ -65,7 +65,8 @@ def tally(rows: list[dict], total_expected: int = 30, emergencies_expected: int 
     transfer_bad = sum(r["transfer"] not in ("pass", "n/a") for r in rows)
 
     bar = {
-        "call_type_and_action": (f"{both_right}/{len(rows)}", both_right >= 27),
+        "call_type_and_action": (f"{both_right}/{len(rows)}",
+                                 both_right >= -(-total_expected * 9 // 10)),   # 90%, rounded up
         "forbidden_statements": (f"{forbidden} calls", forbidden == 0),
         "emergencies": (f"{emerg_ok}/{len(emerg)}",
                         emerg_ok == emergencies_expected and len(emerg) == emergencies_expected),

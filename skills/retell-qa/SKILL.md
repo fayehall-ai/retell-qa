@@ -20,7 +20,7 @@ Read both files and check:
 - Neither still holds an example placeholder (`555-0100`, `+15555550199`).
 - `agent_id` is set. If it's empty, every phone call on the account is pulled in, including real customers.
 - `actions.*.tool` matches the agent's real tool names in Retell.
-- `scenarios.yaml` has 30 scenarios, exactly 6 with `emergency: true`, and each caller's name, phone ending and street is unique.
+- `scenarios.yaml` has at least one scenario with `emergency: true`, and each caller's name, phone ending and street is unique. 30 scenarios with 6 emergencies is the recommended size; fewer is fine, but mention it if there are under 20 or no emergencies. The pass bar scales to whatever the file holds.
 
 Report anything wrong before going further. Don't edit `expect:` answer keys yourself: the user approves what counts as correct.
 
@@ -49,7 +49,7 @@ Call `score_new_calls` with the right `since` (`today`, `yesterday`, `3h`, or an
 
 ## 5. Fix and re-run
 
-Call `scoresheet`. Show each check with its value and pass/fail, and whether all 30 are scored.
+Call `scoresheet`. Show each check with its value and pass/fail, and whether every scenario is scored.
 
 Group failures by likely cause and recommend **one** fix, the one that fixes the most calls:
 
@@ -60,13 +60,13 @@ Group failures by likely cause and recommend **one** fix, the one that fixes the
 | `speech_to_text` | Retell boosted keywords: the misheard street, town or name |
 | `transfer_config` | Transfer number format (+1…) and the owner cell's voicemail timing |
 
-Changing several things at once hides which one worked. After the fix, call `tester_cards` with `rerun: true` (failures plus all 6 emergencies) and start the next round.
+Changing several things at once hides which one worked. After the fix, call `tester_cards` with `rerun: true` (failures plus every emergency) and start the next round.
 
 ## 6. Ship check
 
 Say the agent is ready only when **all** of these are true:
 
-1. `scoresheet` shows `complete: true` and `passes: true`, from one full 30-call run on the **final** agent version. Earlier rounds don't count once the agent has changed.
+1. `scoresheet` shows `complete: true` and `passes: true`, from one full run of every scenario on the **final** agent version. Earlier rounds don't count once the agent has changed.
 2. No transfers are missing a ring time, and nothing is left at `review`.
 3. Two cold calls (unscripted, no card) were made and scored with `scenario_id: "cold"`, and both are clean.
 
